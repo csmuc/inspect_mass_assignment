@@ -13,7 +13,7 @@ module InspectMassAssignment
     
     classes=model_classes.sort {|a,b| a.name <=> b.name}
 
-    result << classes.collect {|r| "<a href=\"##{r.name}\">#{r.name}</a>" }.join(' ')
+    result << classes.collect {|r| "<a style=\"color:#{model_status(r)[0]}\" href=\"##{r.name}\">#{r.name}</a>" }.join(' ')
     
     i=-1
     for m in classes
@@ -30,13 +30,8 @@ module InspectMassAssignment
         next
       end
       
-      if !m.accessible_attributes.nil?
-        result << ': <span style="color:green;">attr_accessible</span>'
-      elsif !m.protected_attributes.nil? && m.protected_attributes.size > 0
-        result << ': <span style="color:yellow;">attr_protected</span>'
-      else
-        result << ': <span style="color:red;">unprotected</span>'
-      end
+      st = model_status(m)
+      result << "<span style=\"color:#{st[0]};\">#{st[1]}</span>"
       
       setters = record.methods.reject {|wm| EXCLUDED_METHODS.include?(wm)}.select {|wm| wm =~ /=$/}.sort    # explicite methods
       setters.concat m.columns.collect {|c| c.name }            # database attributes
@@ -56,6 +51,16 @@ module InspectMassAssignment
     
     result << "</body>"
     result
+  end
+  
+  def self.model_status(m)
+    if !m.accessible_attributes.nil?
+      [:green, 'attr_accessible']
+    elsif !m.protected_attributes.nil? && m.protected_attributes.size > 0
+      [:yellow, 'attr_protected']
+    else
+      [:red, 'unprotected']
+    end
   end
   
   def self.inspect_method(record, method)
